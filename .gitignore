@@ -1,0 +1,29 @@
+# Crear o sobrescribir el .gitignore
+@"
+# Dependencias
+node_modules/
+package-lock.json
+
+# Build
+dist/
+dist-ssr/
+
+# Entorno
+.env
+.env.local
+
+# Logs
+*.log
+
+# Editor
+.zed/
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db
+"@ | Out-File -FilePath .gitignore -Encoding utf8
+
+# Verificar que se creó
+Get-Content .gitignore
