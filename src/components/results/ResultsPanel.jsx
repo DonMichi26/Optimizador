@@ -4,17 +4,17 @@ import { ResultsVisualization } from './CuttingVisualization';
 export function ResultsPanel({ result }) {
   const { settings } = useApp();
 
-  if (!result) return null;
+  if (!result || !result.metrics) return null;
 
-  const { results: boardResults, placedPieces, metrics, generatedScraps } = result;
+  const { results: boardResults, placedPieces = [], metrics, generatedScraps = [] } = result;
 
-  const totalBoardArea = metrics.totalBoardArea;
-  const totalUsedArea = metrics.totalUsedArea;
-  const totalCutMeters = placedPieces.reduce((sum, p) => sum + (p.width + p.height) / 1000, 0);
-  const subtotal = totalCutMeters * settings.cuttingRate;
-  const total = subtotal + settings.serviceFee;
+  const totalBoardArea = metrics.totalBoardArea || 1; // Evitar división por cero
+  const totalUsedArea = metrics.totalUsedArea || 0;
+  const totalCutMeters = placedPieces.reduce((sum, p) => sum + ((p.placedWidth || p.width || 0) + (p.placedHeight || p.height || 0)) / 1000, 0);
+  const subtotal = totalCutMeters * (settings.cuttingRate || 0);
+  const total = subtotal + (settings.serviceFee || 0);
 
-  const unusableWaste = metrics.totalWasteArea;
+  const unusableWaste = metrics.totalWasteArea || 0;
 
   return (
     <div className="space-y-3">
@@ -28,15 +28,15 @@ export function ResultsPanel({ result }) {
         </div>
         <div className="p-2 bg-green-50 rounded text-center">
           <div className="text-green-600 text-xs">USADO</div>
-          <div className="font-bold text-green-600">{(totalUsedArea/1e6).toFixed(2)} m²</div>
+          <div className="font-bold text-green-600">{typeof totalUsedArea === 'number' && !isNaN(totalUsedArea) ? (totalUsedArea/1e6).toFixed(2) : '0.00'} m²</div>
         </div>
         <div className="p-2 bg-blue-50 rounded text-center">
           <div className="text-blue-600 text-xs">RETAZOS</div>
-          <div className="font-bold text-blue-600">{(metrics.totalScrapArea/1e6).toFixed(2)} m²</div>
+          <div className="font-bold text-blue-600">{typeof metrics.totalScrapArea === 'number' && !isNaN(metrics.totalScrapArea) ? (metrics.totalScrapArea/1e6).toFixed(2) : '0.00'} m²</div>
         </div>
         <div className="p-2 bg-red-50 rounded text-center">
           <div className="text-red-500 text-xs">DESPERCIO</div>
-          <div className="font-bold text-red-500">{(unusableWaste/1e6).toFixed(2)} m²</div>
+          <div className="font-bold text-red-500">{typeof unusableWaste === 'number' && !isNaN(unusableWaste) ? (unusableWaste/1e6).toFixed(2) : '0.00'} m²</div>
         </div>
       </div>
 
@@ -44,16 +44,16 @@ export function ResultsPanel({ result }) {
       <div className="bg-white border rounded-lg p-3">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-700">Aprovechamiento</span>
-          <span className="text-lg font-bold text-gray-900">{metrics.utilization.toFixed(1)}%</span>
+          <span className="text-lg font-bold text-gray-900">{typeof metrics.utilization === 'number' && !isNaN(metrics.utilization) ? metrics.utilization.toFixed(1) : '0.0'}%</span>
         </div>
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden flex">
           <div 
             className="h-full bg-green-500 transition-all duration-300" 
-            style={{width: `${metrics.utilization}%`}} 
+            style={{width: `${typeof metrics.utilization === 'number' && !isNaN(metrics.utilization) ? Math.min(metrics.utilization, 100) : 0}%`}} 
           />
         </div>
         <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>Utilizado: {(totalUsedArea/totalBoardArea*100).toFixed(1)}%</span>
+          <span>Utilizado: {totalBoardArea > 0 ? (totalUsedArea/totalBoardArea*100).toFixed(1) : '0.0'}%</span>
           <span>Retazos útiles: {generatedScraps.length > 0 ? `${generatedScraps.length} piezas` : '0'}</span>
         </div>
       </div>
@@ -72,8 +72,8 @@ export function ResultsPanel({ result }) {
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-1">
                 <span>{r.board.width}×{r.board.height}mm</span>
-                <span className={r.utilization > 80 ? 'text-green-600' : r.utilization > 60 ? 'text-amber-600' : 'text-red-600'}>
-                  {r.utilization.toFixed(1)}%
+                <span className={typeof r.utilization === 'number' && !isNaN(r.utilization) && r.utilization > 80 ? 'text-green-600' : typeof r.utilization === 'number' && !isNaN(r.utilization) && r.utilization > 60 ? 'text-amber-600' : 'text-red-600'}>
+                  {typeof r.utilization === 'number' && !isNaN(r.utilization) ? r.utilization.toFixed(1) : '0.0'}%
                 </span>
               </div>
               {r.scraps?.length > 0 && (
@@ -88,12 +88,12 @@ export function ResultsPanel({ result }) {
 
       {/* Costos */}
       <div className="border-t pt-2 space-y-1 text-sm">
-        <div className="flex justify-between"><span className="text-gray-500">Corte:</span><span>{totalCutMeters.toFixed(2)} m</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Tarifa:</span><span>{settings.currency}{settings.cuttingRate}/m</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Servicio:</span><span>{settings.currency}{settings.serviceFee}</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">Corte:</span><span>{typeof totalCutMeters === 'number' && !isNaN(totalCutMeters) ? totalCutMeters.toFixed(2) : '0.00'} m</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">Tarifa:</span><span>{settings.currency || 'S/'}{(settings.cuttingRate || 0).toFixed(2)}/m</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">Servicio:</span><span>{settings.currency || 'S/'}{(settings.serviceFee || 0).toFixed(2)}</span></div>
         <div className="flex justify-between font-bold text-lg border-t pt-1">
           <span>TOTAL:</span>
-          <span className="text-emerald-600">{settings.currency}{total.toFixed(2)}</span>
+          <span className="text-emerald-600">{settings.currency || 'S/'}{typeof total === 'number' && !isNaN(total) ? total.toFixed(2) : '0.00'}</span>
         </div>
       </div>
     </div>

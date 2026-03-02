@@ -45,20 +45,21 @@ export function SettingsPanel() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Moneda</label>
-            <input 
-              type="text" 
-              value={form.currency} 
-              onChange={(e) => setForm({...form, currency: e.target.value})} 
-              className="w-full px-2 py-2 text-sm border rounded" 
-            />
-          </div>
-          <div>
             <label className="text-xs text-gray-500 block mb-1">Espesor corte (mm)</label>
             <input 
               type="number" 
               value={form.cutThickness || 5} 
               onChange={(e) => setForm({...form, cutThickness: parseFloat(e.target.value)||5})} 
+              className="w-full px-2 py-2 text-sm border rounded" 
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Tapacantos (mm)</label>
+            <input 
+              type="number" 
+              value={form.edgeBandThickness || 0} 
+              onChange={(e) => setForm({...form, edgeBandThickness: parseFloat(e.target.value)||0})} 
+              step="0.5"
               className="w-full px-2 py-2 text-sm border rounded" 
             />
           </div>

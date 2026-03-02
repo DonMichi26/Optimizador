@@ -5,6 +5,7 @@ import { PieceForm } from '../components/calculator/PieceForm';
 import { ResultsPanel } from '../components/results/ResultsPanel';
 import { SettingsPanel } from '../components/ui/SettingsPanel';
 import { exportToPDF } from '../utils/exportPDF';
+import { exportToSVG } from '../utils/exportPDF';
 import { smartCutOptimize, ALGORITHM } from '../utils/smartCutOptimizer';
 import { BOARD_TYPES } from '../utils/smartCutOptimizer';
 
@@ -17,30 +18,48 @@ export function Home() {
   const handleCalculate = useCallback(() => {
     if (boards.length === 0 || pieces.length === 0) return;
     setCalculating(true);
-    
+
     requestAnimationFrame(() => {
-      const inventory = [
-        ...scraps.map(s => ({ ...s, type: BOARD_TYPES.SCRAP })),
-        ...boards.filter(b => b.type !== BOARD_TYPES.SCRAP).map(b => ({ ...b, type: BOARD_TYPES.NEW }))
-      ];
-      
-      const result = smartCutOptimize(inventory, pieces, {
-        cutThickness: settings.cutThickness || 5,
-        trimSize: settings.trimSize || 15,
-        minScrapSize: settings.minScrapSize || 300,
-        enableScrapGeneration: settings.enableScrapGeneration !== false,
-        algorithm: ALGORITHM.GUILLOWINDOW,
-        guillotineStrategy: strategy
-      });
-      
-      setCurrentResult(result);
-      setCalculating(false);
+      try {
+        const inventory = [
+          ...scraps.map(s => ({ ...s, type: BOARD_TYPES.SCRAP })),
+          ...boards.filter(b => b.type !== BOARD_TYPES.SCRAP).map(b => ({ ...b, type: BOARD_TYPES.NEW }))
+        ];
+
+        const result = smartCutOptimize(inventory, pieces, {
+          cutThickness: settings.cutThickness || 5,
+          trimSize: settings.trimSize || 15,
+          minScrapSize: settings.minScrapSize || 300,
+          enableScrapGeneration: settings.enableScrapGeneration !== false,
+          algorithm: ALGORITHM.GUILLOWINDOW,
+          guillotineStrategy: strategy,
+          edgeBandThickness: settings.edgeBandThickness || 0
+        });
+
+        if (result && typeof result === 'object') {
+          setCurrentResult(result);
+        } else {
+          console.error('Resultado de optimización inválido:', result);
+          setCurrentResult(null);
+        }
+      } catch (error) {
+        console.error('Error durante la optimización:', error);
+        setCurrentResult(null);
+      } finally {
+        setCalculating(false);
+      }
     });
   }, [boards, scraps, pieces, settings, strategy, setCurrentResult]);
 
   const handleExport = () => {
     if (currentResult) {
       exportToPDF(currentResult, settings, boards, pieces);
+    }
+  };
+
+  const handleExportSVG = () => {
+    if (currentResult) {
+      exportToSVG(currentResult, settings, boards, pieces);
     }
   };
 
@@ -119,7 +138,7 @@ export function Home() {
                   </button>
                 </div>
 
-                {currentResult && (
+                {currentResult && currentResult.metrics && (
                   <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                     <div className="bg-gray-800 text-white px-3 py-2 text-sm font-medium">
                       RESUMEN DE OPTIMIZACIÓN
@@ -127,36 +146,38 @@ export function Home() {
                     <div className="p-3 space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-500">Piezas cortadas:</span>
-                        <span className="font-medium">{currentResult.metrics.piecesPlaced}/{currentResult.metrics.totalPiecesRequested}</span>
+                        <span className="font-medium">{currentResult.metrics.piecesPlaced || 0}/{currentResult.metrics.totalPiecesRequested || 0}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Planchas usadas:</span>
-                        <span className="font-medium">{currentResult.metrics.boardsUsed}</span>
+                        <span className="font-medium">{currentResult.metrics.boardsUsed || 0}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Nuevas:</span>
-                        <span className="font-medium">{currentResult.metrics.newBoardsUsed}</span>
+                        <span className="font-medium">{currentResult.metrics.newBoardsUsed || 0}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Retazos reutilizados:</span>
-                        <span className="font-medium">{currentResult.metrics.scrapBoardsUsed}</span>
+                        <span className="font-medium">{currentResult.metrics.scrapBoardsUsed || 0}</span>
                       </div>
                       <div className="flex justify-between pt-2 border-t">
                         <span className="text-gray-500">Aprovechamiento:</span>
-                        <span className="font-bold text-green-600">{currentResult.metrics.utilization.toFixed(1)}%</span>
+                        <span className="font-bold text-green-600">{typeof currentResult.metrics.utilization === 'number' ? currentResult.metrics.utilization.toFixed(1) : '0.0'}%</span>
                       </div>
-                      {currentResult.generatedScraps.length > 0 && (
+                      {currentResult.generatedScraps && currentResult.generatedScraps.length > 0 && (
                         <div className="flex justify-between pt-2 border-t">
                           <span className="text-gray-500">Retazos generados:</span>
                           <span className="font-bold text-blue-600">{currentResult.generatedScraps.length}</span>
                         </div>
                       )}
-                      <div className="flex justify-between pt-2 border-t">
-                        <span className="font-bold">TOTAL:</span>
-                        <span className="font-bold text-lg">
-                          {settings.currency} {(currentResult.placedPieces.reduce((s,p)=>s+(p.width+p.height)/1000,0) * settings.cuttingRate + settings.serviceFee).toFixed(2)}
-                        </span>
-                      </div>
+                       <div className="flex justify-between pt-2 border-t">
+                         <span className="font-bold">TOTAL:</span>
+                         <span className="font-bold text-lg">
+                           {settings.currency} {currentResult.placedPieces && currentResult.placedPieces.length > 0 ?
+                             (currentResult.placedPieces.reduce((s,p)=>s+((p.placedWidth || p.width || 0)+(p.placedHeight || p.height || 0))/1000,0) * settings.cuttingRate + settings.serviceFee).toFixed(2)
+                             : '0.00'}
+                         </span>
+                       </div>
                     </div>
                   </div>
                 )}
@@ -184,13 +205,22 @@ export function Home() {
                   </div>
                 )}
 
-                <button
-                  onClick={handleExport}
-                  disabled={!currentResult}
-                  className="w-full px-4 py-3 bg-emerald-600 text-white font-bold rounded hover:bg-emerald-700 disabled:opacity-50 text-sm"
-                >
-                  EXPORTAR PDF
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleExport}
+                    disabled={!currentResult}
+                    className="flex-1 px-4 py-3 bg-emerald-600 text-white font-bold rounded hover:bg-emerald-700 disabled:opacity-50 text-sm"
+                  >
+                    EXPORTAR PDF
+                  </button>
+                  <button
+                    onClick={handleExportSVG}
+                    disabled={!currentResult}
+                    className="px-4 py-3 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 disabled:opacity-50 text-sm"
+                  >
+                    EXPORTAR SVG
+                  </button>
+                </div>
               </>
             ) : (
               <SettingsPanel />
@@ -201,9 +231,9 @@ export function Home() {
             <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden h-full">
               <div className="bg-gray-800 text-white px-3 py-2 text-sm font-medium flex justify-between items-center">
                 <span>VISTA PREVIA DE CORTE</span>
-                {currentResult && (
+                {currentResult && currentResult.metrics && (
                   <span className="text-xs bg-green-600 px-2 py-0.5 rounded">
-                    {currentResult.metrics.utilization.toFixed(1)}%
+                    {typeof currentResult.metrics.utilization === 'number' ? currentResult.metrics.utilization.toFixed(1) : '0.0'}%
                   </span>
                 )}
               </div>

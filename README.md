@@ -1,18 +1,22 @@
 # SmartCut - Optimizador de Corte de Planchas
 
-**SmartCut** es una aplicación web moderna para la optimización de corte de planchas (tableros, láminas, paneles) utilizando algoritmos de *bin packing* (empacado bidimensional). Diseñada para talleres de carpintería, metalmecánica, y cualquier industria que requiera optimizar el aprovechamiento de material.
+**SmartCut** es una aplicación web moderna para la optimización de corte de planchas (tableros, láminas, paneles) utilizando algoritmos avanzados de *bin packing* (empacado bidimensional). Diseñada para talleres de carpintería, metalmecánica, y cualquier industria que requiera optimizar el aprovechamiento de material con precisión técnica.
 
 ## 🎯 Características Principales
 
-- **Optimización Inteligente**: Algoritmo *Guillotine Cutter* con múltiples estrategias (Best Area, Best Long Side, Best Short Side) para maximizar el aprovechamiento del material
+- **Optimización Inteligente**: Algoritmo *Guillotine Recursivo* con estrategia Best-Fit Area para maximizar el aprovechamiento del material
+- **Manejo Avanzado de Kerf**: Considera el espesor de corte de la sierra, con excepciones para piezas en bordes
+- **Edge Banding**: Soporte para cinta de borde, configurable por lado, para acabados profesionales
 - **Gestión de Inventario**: Soporte para planchas nuevas y retazos existentes (scraps reutilizables)
-- **Generación Automática de Retazos**: Crea rectángulos aprovechables del desperdicio
-- **Parámetros Configurables**: Kerf (espesor de corte), refile (bordes de desecho), tamaño mínimo de retazo
+- **Generación Automática de Retazos**: Crea rectángulos aprovechables del desperdicio con manejo de kerf
+- **Parámetros Configurables**: Kerf, refile (bordes de desecho), tamaño mínimo de retazo, grosor de edge banding
 - **Múltiples Planchas**: Soporte para diferentes tamaños de planchas y distribución automática
-- **Piezas Personalizadas**: Define dimensiones, cantidades y nombres para cada pieza a cortar
-- **Visualización 2D**: Planos de corte interactivos con vista previa en tiempo real
-- **Exportación PDF**: Genera presupuestos profesionales con detalles de corte y costos
+- **Piezas Personalizadas**: Define dimensiones, cantidades, nombres y restricciones de rotación
+- **Visualización 2D**: Planos de corte interactivos con vista previa en tiempo real y líneas de corte
+- **Exportación Técnica**: PDF profesional con coordenadas de cortes, posiciones de piezas e instrucciones paso a paso
+- **Exportación SVG**: Diagramas vectoriales escalables para precisión en corte
 - **Persistencia Local**: Configuración e historial guardados en el navegador
+- **Manejo de Errores**: Boundary de errores para estabilidad en cálculos complejos
 - **Responsive**: Funciona en desktop, tablet y móvil (PWA ready)
 
 ## 🛠️ Tecnologías
@@ -22,9 +26,10 @@
 | **React 19** | Framework UI |
 | **Vite 7** | Build tool y dev server |
 | **TailwindCSS 4** | Estilos utilitarios |
-| **jsPDF** | Generación de PDF |
+| **jsPDF** | Generación de PDF técnicos |
 | **html2canvas** | Captura de canvas |
 | **UUID** | Generación de IDs únicos |
+| **Error Boundary** | Manejo robusto de errores |
 
 ## 📦 Instalación
 
@@ -51,7 +56,7 @@ npm run lint
 ## 🚀 Uso
 
 ### 1. Configurar Planchas
-- Ingresa el ancho y alto de tus planchas (en mm o cm)
+- Ingresa el ancho y alto de tus planchas (en mm)
 - Usa los presets rápidos para tamaños comunes
 - Agrega múltiples planchas si necesitas combinar tamaños
 - Gestiona retazos existentes: agrega scraps reutilizables al inventario
@@ -60,99 +65,99 @@ npm run lint
 - Define las dimensiones de cada pieza a cortar
 - Especifica la cantidad requerida
 - Opcional: asigna un nombre identificador
+- Configura restricciones de rotación si es necesario
 
-### 3. Configurar Parámetros
-- Ajusta kerf (espesor de corte, default 5mm)
-- Configura refile (bordes de desecho, default 15mm)
+### 3. Configurar Parámetros Avanzados
+- Ajusta kerf (espesor de corte, default 5mm) con manejo inteligente en bordes
+- Configura refile (bordes de desecho, default 10mm)
+- Define grosor de edge banding (default 1.5mm, configurable por lado)
 - Define tamaño mínimo de retazo (default 300mm)
-- Selecciona estrategia de colocamiento (Best Area, Best Long Side, Best Short Side)
+- Selecciona estrategia de colocamiento (Best-Fit Area optimizada)
 
 ### 4. Calcular Optimización
-- Presiona **CALCULAR** para ejecutar el algoritmo
-- Visualiza el plano de corte con la distribución óptima
-- Revisa el porcentaje de aprovechamiento y retazos generados
+- Presiona **CALCULAR** para ejecutar el algoritmo avanzado
+- Visualiza el plano de corte con distribución óptima y líneas de corte
+- Revisa métricas detalladas: aprovechamiento, retazos, cortes necesarios
 
-### 5. Exportar Presupuesto
-- Genera un PDF profesional con:
-  - Lista de planchas y piezas
-  - Diagrama de corte
-  - Cálculo de costos (tarifa por metro + servicio)
-  - Métricas de aprovechamiento y retazos generados
+### 5. Exportar Documentos Técnicos
+- **PDF Profesional**: Genera presupuesto con coordenadas de cortes, posiciones de piezas, secuencia de corte paso a paso y diagramas
+- **SVG Vectorial**: Exporta diagramas escalables para precisión en CNC o corte manual
 
-## 🧠 Algoritmo de Optimización
+## 🧠 Algoritmo de Optimización Avanzado
 
-El proyecto implementa un algoritmo **Guillotine Cutting** optimizado con las siguientes características:
+El proyecto implementa un algoritmo **Guillotine Recursivo** optimizado con las siguientes características avanzadas:
 
-### GuillotineCutter Class
+### Clase GuillotineOptimizer
 ```
 ┌─────────────────────────────────────┐
 │ 1. Gestión de Inventario            │
 │    - Planchas nuevas + retazos      │
 │    - Distribución automática         │
 ├─────────────────────────────────────┤
-│ 2. Expansión de piezas              │
-│    - Considera kerf (espesor corte) │
-│    - Aplica refile (bordes)         │
+│ 2. Expansión de Piezas              │
+│    - Agrega kerf (espesor corte)    │
+│    - Aplica edge banding (+ grosor) │
+│    - Maneja bordes inteligentes      │
 │    - Multiplica por cantidad        │
 ├─────────────────────────────────────┤
-│ 3. Ordenamiento inteligente         │
-│    - Según estrategia seleccionada  │
-│    - Best Area: área descendente    │
-│    - Best Long Side: lado largo     │
-│    - Best Short Side: lado corto    │
+│ 3. Ordenamiento Best-Fit Area       │
+│    - Área descendente + lado largo  │
+│    - Ponderación 70/30 para óptimo  │
 ├─────────────────────────────────────┤
-│ 4. Colocamiento greedy              │
-│    - Busca mejor rectángulo libre   │
+│ 4. Colocamiento Recursivo           │
+│    - Busca rectángulo con mejor fit │
+│    - Minimiza área de desperdicio    │
 │    - Permite rotación 90°           │
-│    - Divide rectángulos restantes   │
+│    - Divide recursivamente espacio  │
 │    - Fusiona rectángulos adyacentes │
 ├─────────────────────────────────────┤
-│ 5. Generación de retazos           │
+│ 5. Generación de Retazos           │
 │    - Retazos > minScrapSize         │
+│    - Respeta kerf en particiones    │
 │    - Rectángulos aprovechables      │
+├─────────────────────────────────────┤
+│ 6. Coordenadas Técnicas             │
+│    - Secuencia ordenada de cortes   │
+│    - Posiciones precisas de piezas  │
+│    - Instrucciones para CNC/manual  │
 └─────────────────────────────────────┘
 ```
 
-### Estrategias de Ordenamiento
-
-| Estrategia | Descripción | Mejor para |
-|------------|-------------|------------|
-| **Best Area** | Ordena por área descendente | Maximización general |
-| **Best Long Side** | Ordena por lado largo descendente | Retazos más aprovechables |
-| **Best Short Side** | Ordena por lado corto descendente | Eficiencia en cortes |
+### Estrategia Best-Fit Area
+- Ordena piezas por área descendente con ponderación del lado más largo
+- Selecciona el rectángulo libre que minimiza el desperdicio tras colocación
+- Maneja kerf correctamente, evitando adiciones innecesarias en bordes
 
 ### Métodos Clave
-
 | Método | Descripción |
 |--------|-------------|
-| `canFit(w, h)` | Verifica si la pieza cabe (normal o rotada) |
-| `place(w, h)` | Coloca la pieza y divide el espacio libre |
-| `splitRect()` | Divide el rectángulo en dos nuevos espacios |
+| `findBestRect(piece)` | Evalúa rectángulos libres y selecciona mejor fit por área |
+| `place(piece)` | Coloca pieza, registra cortes y divide espacio recursivamente |
+| `splitRect()` | Particiona espacio restante respetando kerf y bordes |
+| `recordCutLines()` | Registra coordenadas de cortes verticales/horizontales |
 | `mergeFreeRects()` | Fusiona rectángulos adyacentes para optimizar |
-| `getOccupancy()` | Calcula porcentaje de uso de la plancha |
-| `generateScraps()` | Crea retazos aprovechables del desperdicio |
+| `getCutCoordinates()` | Devuelve secuencia ordenada de cortes |
+| `getStats()` | Calcula métricas de aprovechamiento y desperdicio |
 
-## 📦 Gestión de Inventario
-
-La aplicación incluye un sistema completo de gestión de inventario para maximizar el aprovechamiento:
+## 📦 Gestión de Inventario Avanzada
 
 ### Tipos de Planchas
 - **Nuevas**: Planchas completas de stock
-- **Retazos**: Piezas remanentes de cortes anteriores
+- **Retazos**: Piezas remanentes con manejo inteligente de kerf
+
+### Edge Banding Profesional
+- Configurable por lado (top/bottom/left/right)
+- Agrega grosor al corte bruto para acabados perfectos
+- Afecta dimensiones finales sin comprometer precisión
 
 ### Generación Automática de Retazos
-- Detecta rectángulos libres aprovechables
+- Detecta rectángulos aprovechables respetando kerf
 - Filtra por tamaño mínimo configurable
-- Agrega automáticamente al inventario para futuros cortes
+- Evita scraps inválidos en bordes
 
-### Beneficios
-- Reduce desperdicio acumulativo
-- Optimiza costos al reutilizar material
-- Mejora eficiencia en talleres con alto volumen
+## 📊 Generación de PDF Técnico
 
-## 📊 Generación de PDF
-
-El módulo `exportPDF.js` genera documentos profesionales con:
+El módulo `exportPDF.js` genera documentos profesionales con detalles técnicos:
 
 ### Estructura del PDF
 ```
@@ -166,11 +171,20 @@ El módulo `exportPDF.js` genera documentos profesionales con:
 │ - Lista con dimensiones             │
 ├──────────────────────────────────────┤
 │ PIEZAS                              │
-│ - Tabla: Nombre, Medida, Cant, Estado│
+│ - Tabla: ID, Nombre, Medida, Cant,  │
+│         Veta, Estado                │
 ├──────────────────────────────────────┤
 │ APROVECHAMIENTO                     │
-│ - Área total, usada, desperdicio    │
+│ - Área total, usada, retazos útiles │
 │ - Porcentaje de utilización         │
+├──────────────────────────────────────┤
+│ COORDENADAS DE CORTE                │
+│ - Cortes verticales/horizontales    │
+│ - Posiciones desde bordes           │
+├──────────────────────────────────────┤
+│ POSICIONES DE PIEZAS                │
+│ - Coordenadas x/y por pieza         │
+│ - Dimensiones finales, rotación     │
 ├──────────────────────────────────────┤
 │ COSTO                               │
 │ - Metros de corte                   │
@@ -180,33 +194,23 @@ El módulo `exportPDF.js` genera documentos profesionales con:
 └──────────────────────────────────────┘
 ```
 
-### Cálculos del PDF
-- **Metros de corte**: Suma de (ancho + alto) de cada pieza / 1000
-- **Subtotal**: Metros × tarifa por metro
-- **Total**: Subtotal + tarifa de servicio
+### Cálculos Técnicos
+- **Coordenadas de Corte**: Secuencia paso a paso con posiciones precisas
+- **Posiciones de Piezas**: Referencias exactas para colocación y marcado
+- **Metros de Corte**: Suma de perímetros considerando kerf
+- **Aprovechamiento**: Utilización real vs. área utilizable
 
-## 🎨 Visualización 2D (Planos de Corte)
+## 🎨 Visualización 2D Avanzada
 
-El componente `CuttingVisualization.jsx` renderiza los planos usando Canvas API:
+El componente `CuttingVisualization.jsx` renderiza planos con precisión:
 
 ### Características del Canvas
-- **Escalado automático**: Se ajusta al contenedor
-- **Grid de referencia**: Líneas guía cada 100mm
-- **Piezas coloreadas**: Colores distintivos por pieza
-- **Dimensiones etiquetadas**: Muestra medidas en cada pieza
-- **Líneas de corte guillotina**: Líneas punteadas rojas edge-to-edge
-- **Marcas de coordenadas**: Esquinas con referencias
-
-### Proceso de Renderizado
-```javascript
-1. Calcular escala basada en tamaño de plancha y contenedor
-2. Dibujar fondo y grid de referencia
-3. Dibujar borde de la plancha
-4. Renderizar piezas (fill + stroke + texto)
-5. Calcular y dibujar cortes verticales (edge-to-edge)
-6. Calcular y dibujar cortes horizontales (edge-to-edge)
-7. Agregar marcas de coordenadas
-```
+- **Escalado Automático**: Se ajusta al contenedor
+- **Grid de Referencia**: Líneas guía cada 100mm
+- **Piezas Coloreadas**: Colores distintivos, indicadores de rotación
+- **Líneas de Corte**: Cortes guillotina con grosor proporcional a kerf
+- **Marcas de Coordenadas**: Referencias en esquinas
+- **Edge Banding Visual**: Indicadores de grosor agregado
 
 ## 📁 Estructura del Proyecto
 
@@ -216,20 +220,23 @@ Optimizador/
 │   ├── components/
 │   │   ├── calculator/
 │   │   │   ├── BoardForm.jsx      # Formulario de planchas con tipos
-│   │   │   └── PieceForm.jsx      # Formulario de piezas
+│   │   │   └── PieceForm.jsx      # Formulario de piezas con banding
 │   │   ├── results/
 │   │   │   ├── ResultsPanel.jsx   # Panel de resultados con métricas
-│   │   │   └── CuttingVisualization.jsx  # Canvas 2D
+│   │   │   └── CuttingVisualization.jsx  # Canvas 2D avanzado
 │   │   └── ui/
-│   │       ├── SettingsPanel.jsx  # Configuración extendida (kerf, refile, etc.)
-│   │       └── HistoryPanel.jsx   # Historial (UI)
+│   │       ├── SettingsPanel.jsx  # Configuración extendida (kerf, banding)
+│   │       └── HistoryPanel.jsx   # Historial
 │   ├── context/
 │   │   └── AppContext.jsx         # Estado global con inventario
 │   ├── utils/
-│   │   ├── smartCutOptimizer.js   # Motor de optimización Guillotine
-│   │   └── exportPDF.js           # Generación de PDF
+│   │   ├── smartCutOptimizer.js   # Motor Guillotine recursivo
+│   │   ├── exportPDF.js           # PDF técnico con coordenadas
+│   │   └── exportSVG.js           # Exportación vectorial
 │   ├── pages/
 │   │   └── Home.jsx               # Página principal
+│   ├── components/
+│   │   └── ErrorBoundary.jsx      # Manejo de errores
 │   ├── App.jsx
 │   └── main.jsx
 ├── public/
@@ -239,35 +246,30 @@ Optimizador/
 └── README.md
 ```
 
-## ⚙️ Configuración
+## ⚙️ Configuración Avanzada
 
-La aplicación permite configurar:
-- **Nombre del negocio**: Personaliza el encabezado del PDF
+- **Nombre del Negocio**: Personaliza encabezado del PDF
 - **Moneda**: Símbolo monetario (default: S/)
-- **Tarifa de corte**: Costo por metro lineal de corte
-- **Tarifa de servicio**: Costo fijo adicional
-- **Kerf (espesor de corte)**: Espesor del corte de la sierra (default: 5mm)
-- **Refile (bordes de desecho)**: Bordes de desecho en planchas (default: 15mm)
-- **Tamaño mínimo de retazo**: Dimensión mínima para considerar un retazo aprovechable (default: 300mm)
-- **Estrategia de colocamiento**: Algoritmo para ordenar piezas (Best Area, Best Long Side, Best Short Side)
+- **Tarifa de Corte**: Costo por metro lineal
+- **Tarifa de Servicio**: Costo fijo adicional
+- **Kerf**: Espesor de corte (default: 5mm)
+- **Refile**: Bordes de desecho (default: 10mm)
+- **Edge Banding**: Grosor por lado (default: 1.5mm)
+- **Tamaño Mínimo de Retazo**: Para aprovechables (default: 300mm)
+- **Estrategia**: Best-Fit Area optimizada
 
 ## 🔌 APIs y Contexto
 
 ### AppContext
-Provee estado global para:
-- `boards`: Lista de planchas (nuevas y retazos)
-- `pieces`: Lista de piezas
-- `settings`: Configuración del negocio y parámetros de corte
-- `history`: Historial de cálculos
-- `currentResult`: Resultado actual con retazos generados
+Estado global para inventario, piezas, configuración, historial y resultados.
 
 ### Funciones Principales
 | Función | Descripción |
 |---------|-------------|
-| `optimizeCutting(boards, pieces, settings)` | Ejecuta el algoritmo Guillotine con estrategia seleccionada |
-| `exportToPDF(result, settings, boards, pieces)` | Genera el PDF con métricas actualizadas |
-| `addScrap(board)` | Agrega un retazo al inventario |
-| `removeScrap(id)` | Elimina un retazo del inventario |
+| `smartCutOptimize()` | Ejecuta algoritmo con kerf, banding y recursión |
+| `exportToPDF()` | Genera PDF con coordenadas y posiciones |
+| `exportToSVG()` | Exporta diagrama vectorial |
+| `addScrap()` | Agrega retazo con validaciones |
 
 ## 📝 Licencia
 
@@ -275,4 +277,4 @@ Proyecto privado - Todos los derechos reservados.
 
 ## 👨‍💻 Desarrollo
 
-Desarrollado con React + Vite + TailwindCSS para optimización de procesos de corte industrial.
+Desarrollado con React + Vite + TailwindCSS para optimización industrial de procesos de corte con precisión técnica.

@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS = {
   trimSize: 15,
   minScrapSize: 300,
   enableScrapGeneration: true,
-  cutDirection: 'any'
+  cutDirection: 'any',
+  edgeBandThickness: 0
 };
 
 const DEFAULT_BOARD = {
@@ -42,6 +43,15 @@ export function AppProvider({ children }) {
     return saved ? JSON.parse(saved) : [];
   });
   const [currentResult, setCurrentResult] = useState(null);
+
+  const safeSetCurrentResult = (result) => {
+    if (result && typeof result === 'object' && result.metrics) {
+      setCurrentResult(result);
+    } else {
+      console.warn('Intentando establecer un resultado inválido:', result);
+      setCurrentResult(null);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('smartcut-settings', JSON.stringify(settings));
@@ -97,28 +107,66 @@ export function AppProvider({ children }) {
       return null;
     }
 
-    const inventory = [
-      ...scraps.map(s => ({ ...s, type: BOARD_TYPES.SCRAP })),
-      ...boards.filter(b => b.type !== BOARD_TYPES.SCRAP).map(b => ({ ...b, type: BOARD_TYPES.NEW }))
-    ];
+    try {
+      const inventory = [
+        ...scraps.map(s => ({ ...s, type: BOARD_TYPES.SCRAP })),
+        ...boards.filter(b => b.type !== BOARD_TYPES.SCRAP).map(b => ({ ...b, type: BOARD_TYPES.NEW }))
+      ];
 
-    const result = smartCutOptimize(inventory, pieces, {
-      cutThickness: settings.cutThickness || 5,
-      trimSize: settings.trimSize || 15,
-      minScrapSize: settings.minScrapSize || 300,
-      enableScrapGeneration: settings.enableScrapGeneration !== false,
-      cutDirection: settings.cutDirection || 'any'
-    });
+      const result = smartCutOptimize(inventory, pieces, {
+        cutThickness: settings.cutThickness || 5,
+        trimSize: settings.trimSize || 15,
+        minScrapSize: settings.minScrapSize || 300,
+        enableScrapGeneration: settings.enableScrapGeneration !== false,
+        cutDirection: settings.cutDirection || 'any'
+      });
 
-    if (result.success && result.generatedScraps.length > 0 && settings.enableScrapGeneration) {
-      const usableScraps = result.generatedScraps.filter(s => 
-        s.width >= (settings.minScrapSize || 300) && 
-        s.height >= (settings.minScrapSize || 300)
-      );
-      addScraps(usableScraps);
+      if (result.success && result.generatedScraps.length > 0 && settings.enableScrapGeneration) {
+        const usableScraps = result.generatedScraps.filter(s =>
+          s.width >= (settings.minScrapSize || 300) &&
+          s.height >= (settings.minScrapSize || 300)
+        );
+        addScraps(usableScraps);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error en runOptimization:', error);
+      return {
+        success: false,
+        results: [],
+        placedPieces: [],
+        unplacedPieces: pieces || [],
+        generatedScraps: [],
+        error: error.message || 'Error desconocido en la optimización',
+        metrics: {
+          boardsUsed: 0,
+          newBoardsUsed: 0,
+          scrapBoardsUsed: 0,
+          totalBoardsAvailable: inventory?.length || 0,
+          totalPiecesRequested: pieces?.length || 0,
+          piecesPlaced: 0,
+          piecesUnplaced: pieces?.length || 0,
+          totalBoardArea: 0,
+          totalUsedArea: 0,
+          totalTrimArea: 0,
+          totalScrapArea: 0,
+          totalWasteArea: 0,
+          totalUsableArea: 0,
+          utilization: 0,
+          usableUtilization: 0,
+          scrapGenerated: 0
+        },
+        summary: {
+          usedBoards: 0,
+          newBoards: 0,
+          reusedScraps: 0,
+          newScrapsGenerated: 0,
+          efficiency: 0,
+          wastePercentage: 0
+        }
+      };
     }
-
-    return result;
   };
 
   const updateBoard = (id, updates) => {
@@ -152,7 +200,7 @@ export function AppProvider({ children }) {
   const clearAll = () => {
     setBoards([DEFAULT_BOARD]);
     setPieces([]);
-    setCurrentResult(null);
+    safeSetCurrentResult(null);
   };
 
   const updateSettings = (newSettings) => {
@@ -178,7 +226,7 @@ export function AppProvider({ children }) {
     setHistory([]);
   };
 
-  return (
+      return (
     <AppContext.Provider value={{
       boards,
       scraps,
@@ -186,7 +234,7 @@ export function AppProvider({ children }) {
       settings,
       history,
       currentResult,
-      setCurrentResult,
+      setCurrentResult: safeSetCurrentResult,
       addBoard,
       updateBoard,
       removeBoard,
