@@ -24,6 +24,3 @@ dist-ssr/
 .DS_Store
 Thumbs.db
 "@ | Out-File -FilePath .gitignore -Encoding utf8
-
-# Verificar que se creó
-Get-Content .gitignore
